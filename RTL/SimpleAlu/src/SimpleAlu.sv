@@ -1,13 +1,16 @@
-module SimpleAlu(
+module SimpleAlu #(
+    parameter DATA_WIDTH,
+    parameter OP_WIDTH
+)(
     input clk,
     input resetn,
-    input [31:0] A,
-    input [31:0] B,
-    input [2:0] OP,
-    output [31:0] X,
+    input [DATA_WIDTH-1:0] A,
+    input [DATA_WIDTH-1:0] B,
+    input [OP_WIDTH-1:0] OP,
+    output [DATA_WIDTH-1:0] X,
     output Z
 );
-    logic [31:0] output_d, output_q;
+    logic [DATA_WIDTH-1:0] output_d, output_q;
 
     assign Z = (X == 0);
     assign X = output_q;

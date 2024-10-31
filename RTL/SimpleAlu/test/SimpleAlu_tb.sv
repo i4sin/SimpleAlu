@@ -4,11 +4,13 @@ import vunit_pkg::*;
 
 `include "vunit_defines.svh"
 
-module SimpleAlu_tb();
+module SimpleAlu_tb;
+    localparam DATA_WIDTH = 32;
+    localparam OP_WIDTH = 2;
     localparam TOTAL_WORDS_COUNT = 100000;
 
-    typedef logic [31:0] data_logic_array[$];
-    typedef logic [2:0]  op_logic_array  [$];
+    typedef logic [DATA_WIDTH-1:0] data_logic_array[$];
+    typedef logic [OP_WIDTH-1:0]   op_logic_array  [$];
     typedef logic z_array[$];
 
     data_logic_array input_a_array;
@@ -23,13 +25,16 @@ module SimpleAlu_tb();
     bit resetn = 0;
     initial forever #10 clk = ~clk;
     
-    logic [31:0] input_A;
-    logic [31:0] input_B;
-    logic [2:0]  input_OP;
-    logic [31:0] output_X;
-    logic        output_Z;
+    logic [DATA_WIDTH-1:0] input_A;
+    logic [DATA_WIDTH-1:0] input_B;
+    logic [OP_WIDTH-1:0]   input_OP;
+    logic [DATA_WIDTH-1:0] output_X;
+    logic                  output_Z;
 
-    SimpleAlu alu(
+    SimpleAlu #(
+        .DATA_WIDTH(DATA_WIDTH),
+        .OP_WIDTH(OP_WIDTH)
+    ) alu (
         .clk(clk),
         .resetn(resetn),
         .A(input_A),
@@ -40,7 +45,7 @@ module SimpleAlu_tb();
     );
 
     function data_logic_array generate_random_data();
-        logic [31:0] random_data[TOTAL_WORDS_COUNT];
+        logic [DATA_WIDTH-1:0] random_data[TOTAL_WORDS_COUNT];
         foreach (random_data[i]) begin
             random_data[i] = $urandom();
         end
@@ -48,17 +53,17 @@ module SimpleAlu_tb();
     endfunction
 
     function op_logic_array generate_random_op();
-        logic [2:0] random_op[TOTAL_WORDS_COUNT];
+        logic [OP_WIDTH-1:0] random_op[TOTAL_WORDS_COUNT];
         foreach (random_op[i]) begin
             random_op[i] = $urandom_range(0,6);
         end
         return random_op;
     endfunction
 
-    function data_logic_array calculate_expected_output(logic [31:0] input_a_array[$],
-                                                        logic [31:0] input_b_array[$],
-                                                        logic [2:0] op_array[$]);
-        logic [31:0] expected_outputs[$];
+    function data_logic_array calculate_expected_output(logic [DATA_WIDTH-1:0] input_a_array[$],
+                                                        logic [DATA_WIDTH-1:0] input_b_array[$],
+                                                        logic [OP_WIDTH-1:0] op_array[$]);
+        logic [DATA_WIDTH-1:0] expected_outputs[$];
         for (int i = 0; i < TOTAL_WORDS_COUNT; i++) begin
             case (op_array[i])
                 3'b000 : expected_outputs.push_back(input_a_array[i] +  input_b_array[i]);
@@ -73,21 +78,21 @@ module SimpleAlu_tb();
         return expected_outputs;
     endfunction
 
-    function z_array calculate_expected_z(logic [31:0] expected_output_array[$]);
+    function z_array calculate_expected_z(logic [DATA_WIDTH-1:0] expected_output_array[$]);
         foreach (expected_output_array[i]) begin
             expexted_output_z_array[i] = (expected_output_array[i] == 0);
         end
         return expexted_output_z_array;
     endfunction
 
-    task drive_input(logic [31:0] current_input_A, logic [31:0] current_input_B, logic [2:0] current_input_OP);
+    task drive_input(logic [DATA_WIDTH-1:0] current_input_A, logic [DATA_WIDTH-1:0] current_input_B, logic [OP_WIDTH-1:0] current_input_OP);
         input_A <= current_input_A;
         input_B <= current_input_B;
         input_OP <= current_input_OP;
         @(posedge clk);
     endtask
 
-    task check_output(logic [31:0] current_expected_output, logic current_expected_z);        
+    task check_output(logic [DATA_WIDTH-1:0] current_expected_output, logic current_expected_z);        
         @(posedge clk);
         assert (output_X == current_expected_output) begin
             $display("A: %h, B: %h, OP: %b, X: %h, expected_X: %h, Z: %b, expected_Z: %b",
